@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-// 1. Initialize with your Cloud Run API Key
+// We define it as genAI here...
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface TaskJSON {
@@ -11,9 +11,9 @@ export interface TaskJSON {
   estimated_hours: number;
 }
 
-// 2. Configure the Model with the Schema
+// ...so we must use genAI here!
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash", // Use a stable model name
+  model: "gemini-1.5-flash", 
   generationConfig: {
     responseMimeType: "application/json",
     responseSchema: {
@@ -28,15 +28,15 @@ const model = genAI.getGenerativeModel({
       required: ["task_name", "priority", "category", "action_items", "estimated_hours"],
     },
   },
-  systemInstruction: "You are a backend JSON parser. Extract task details precisely. Only output valid JSON.",
+  systemInstruction: "You are a backend JSON parser for a Management System. Extract task details precisely. Only output valid JSON.",
 });
 
 export async function parseTask(input: string): Promise<TaskJSON> {
-  // 3. Call generateContent using the configured model
-  const result = await model.generateContent(`Parse this description: "${input}"`);
+  // Use the 'model' we defined above
+  const result = await model.generateContent(`Parse this natural language task: "${input}"`);
   const response = await result.response;
   const text = response.text();
-
+  
   if (!text) throw new Error("No response from AI");
   
   return JSON.parse(text) as TaskJSON;

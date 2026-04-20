@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-// Ensure this matches your variable name from Cloud Run
+// 1. Initialize with your Cloud Run API Key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface TaskJSON {
@@ -11,43 +11,32 @@ export interface TaskJSON {
   estimated_hours: number;
 }
 
-export async function parseTask(input: string): Promise<TaskJSON> {
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Parse this natural language task description into structured JSON: "${input}"`,
-    config: {
-      systemInstruction: "You are a backend JSON parser for a Management System. Extract task details precisely. If input is vague, make an educated guess based on keywords. Only output valid JSON.",
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          task_name: { type: Type.STRING, description: "The title of the task" },
-          priority: { 
-            type: Type.STRING, 
-            enum: ["Low", "Medium", "High"],
-            description: "Task priority level"
-          },
-          category: { 
-            type: Type.STRING, 
-            enum: ["Personal", "Work", "Academic", "NGO"],
-            description: "Task category"
-          },
-          action_items: { 
-            type: Type.ARRAY, 
-            items: { type: Type.STRING },
-            description: "Steps required to complete the task"
-          },
-          estimated_hours: { 
-            type: Type.NUMBER, 
-            description: "Estimated time in hours"
-          },
-        },
-        required: ["task_name", "priority", "category", "action_items", "estimated_hours"]
-      }
+// 2. Configure the Model with the Schema
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash", // Use a stable model name
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: SchemaType.OBJECT,
+      properties: {
+        task_name: { type: SchemaType.STRING },
+        priority: { type: SchemaType.STRING, enum: ["Low", "Medium", "High"] },
+        category: { type: SchemaType.STRING, enum: ["Personal", "Work", "Academic", "NGO"] },
+        action_items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        estimated_hours: { type: SchemaType.NUMBER },
+      },
+      required: ["task_name", "priority", "category", "action_items", "estimated_hours"],
     },
-  });
+  },
+  systemInstruction: "You are a backend JSON parser. Extract task details precisely. Only output valid JSON.",
+});
 
-  const text = response.text;
+export async function parseTask(input: string): Promise<TaskJSON> {
+  // 3. Call generateContent using the configured model
+  const result = await model.generateContent(`Parse this description: "${input}"`);
+  const response = await result.response;
+  const text = response.text();
+
   if (!text) throw new Error("No response from AI");
   
   return JSON.parse(text) as TaskJSON;

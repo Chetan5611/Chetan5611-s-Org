@@ -1,0 +1,6 @@
+{
+  "name": "AI Management Parser",
+  "description": "Convert messy natural language into structured JSON for management tasks using AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

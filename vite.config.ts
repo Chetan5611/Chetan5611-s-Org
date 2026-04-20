@@ -4,28 +4,26 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-  base: './', // Add this line!
+  // This line pulls variables from the Cloud Run environment
+  const env = loadEnv(mode, process.cwd(), ''); 
+
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      // This maps BOTH possible names to the code, just to be safe
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GOOGLE_API_KEY || env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    // ADD THIS SECTION FOR CLOUD RUN
     preview: {
       port: 8080,
       host: '0.0.0.0',
       strictPort: true,
-      allowedHosts: true // Changes this to 'true' to bypass host checking
+      allowedHosts: true
     },
-    server: {
-      // Keep your existing HMR logic
-      hmr: process.env.DISABLE_HMR !== 'true',
-    },
+    base: './', 
   };
 });

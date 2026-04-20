@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       port: 8080,
       host: '0.0.0.0',
       strictPort: true,
-      allowedHosts: 'all' // This allows the Google Cloud URL to load the app
+      allowedHosts: true // Changes this to 'true' to bypass host checking
     },
     server: {
       // Keep your existing HMR logic
